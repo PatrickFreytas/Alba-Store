@@ -5,6 +5,7 @@ import ForgotPassword from './components/ForgotPassword/ForgotPassword'
 import ResetPassword from './components/ResetPassword/ResetPassword'
 import Catalog from './components/Catalog/Catalog'
 import { login, register, requestPasswordReset, resetPassword, type User } from './data/auth'
+import { addToCart, countItems, type CartItem } from './data/cart'
 
 type View = 'login' | 'register' | 'forgot' | 'reset' | 'catalog'
 
@@ -18,6 +19,7 @@ function App() {
   const [authError, setAuthError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
+  const [cart, setCart] = useState<CartItem[]>([])
 
   const goTo = (next: View) => {
     setAuthError(null)
@@ -50,7 +52,14 @@ function App() {
   }
 
   if (view === 'catalog') {
-    return <Catalog user={user} onAccountClick={logout} />
+    return (
+      <Catalog
+        user={user}
+        cartCount={countItems(cart)}
+        onAddToCart={(product) => setCart((prev) => addToCart(prev, product))}
+        onAccountClick={logout}
+      />
+    )
   }
 
   if (view === 'register') {

@@ -5,9 +5,10 @@ import './ProductCard.css'
 
 interface ProductCardProps {
   product: Product
+  onAddToCart: (id: number) => void
 }
 
-function ProductCard({ product }: ProductCardProps) {
+function ProductCard({ product, onAddToCart }: ProductCardProps) {
   return (
     <article className="product-card">
       <div className="product-card__media" style={{ background: product.imageBg }}>
@@ -29,6 +30,9 @@ function ProductCard({ product }: ProductCardProps) {
 
         <div className="product-card__footer">
           <span className="product-card__price">{formatPrice(product.price)}</span>
+          <button type="button" className="product-card__add" onClick={() => onAddToCart(product.id)}>
+            Agregar
+          </button>
         </div>
       </div>
     </article>

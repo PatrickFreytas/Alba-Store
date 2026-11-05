@@ -26,12 +26,18 @@ function normalize(text: string) {
 
 interface CatalogProps {
   user: User | null
+  cartCount: number
+  onAddToCart: (product: Product) => void
   onAccountClick?: () => void
+  onCartClick?: () => void
 }
 
 function Catalog({
   user,
+  cartCount,
+  onAddToCart,
   onAccountClick,
+  onCartClick,
 }: CatalogProps) {
   const [search, setSearch] = useState('')
   const [category, setCategory] = useState<Category | null>(null)
@@ -95,6 +101,7 @@ function Catalog({
       <Header
         search={search}
         onSearchChange={resetPage(setSearch)}
+        cartCount={cartCount}
         accountLabel={user ? user.fullName.split(' ')[0] : 'Mi cuenta'}
         onLogoClick={() => {
           setSearch('')
@@ -102,6 +109,7 @@ function Catalog({
           setPage(1)
         }}
         onAccountClick={onAccountClick}
+        onCartClick={onCartClick}
       />
 
       <main className="catalog__main">
@@ -216,6 +224,7 @@ function Catalog({
                   <ProductCard
                     key={product.id}
                     product={product}
+                    onAddToCart={() => onAddToCart(product)}
                   />
                 ))}
               </div>
