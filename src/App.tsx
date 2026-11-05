@@ -5,10 +5,12 @@ import ForgotPassword from './components/ForgotPassword/ForgotPassword'
 import ResetPassword from './components/ResetPassword/ResetPassword'
 import Catalog from './components/Catalog/Catalog'
 import Checkout from './components/Checkout/Checkout'
+import AccountLayout, { type AccountSection } from './components/Account/AccountLayout'
+import FavoritesPage from './components/Account/FavoritesPage'
 import { login, register, requestPasswordReset, resetPassword, type User } from './data/auth'
 import { addToCart, countItems, setQuantity, type CartItem } from './data/cart'
 
-type View = 'login' | 'register' | 'forgot' | 'reset' | 'catalog' | 'checkout'
+type View = 'login' | 'register' | 'forgot' | 'reset' | 'catalog' | 'checkout' | AccountSection
 
 // El enlace del correo de recuperación llega como /?reset=<token>
 const initialResetToken = new URLSearchParams(window.location.search).get('reset')
@@ -21,6 +23,7 @@ function App() {
   const [notice, setNotice] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [cart, setCart] = useState<CartItem[]>([])
+  const [favorites, setFavorites] = useState<number[]>([])
 
   const goTo = (next: View) => {
     setAuthError(null)
@@ -57,14 +60,20 @@ function App() {
     window.scrollTo(0, 0)
   }, [view])
 
+  const toggleFavorite = (id: number) =>
+    setFavorites((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]))
+
   if (view === 'catalog') {
     return (
       <Catalog
         user={user}
         cartCount={countItems(cart)}
+        favorites={favorites}
         onAddToCart={(product) => setCart((prev) => addToCart(prev, product))}
+        onToggleFavorite={toggleFavorite}
         onCartClick={() => goTo('checkout')}
-        onAccountClick={logout}
+        onFavoritesClick={() => goTo('favorites')}
+        onAccountClick={() => (user ? goTo('favorites') : goTo('login'))}
       />
     )
   }
@@ -76,6 +85,29 @@ function App() {
         onQuantityChange={(id, quantity) => setCart((prev) => setQuantity(prev, id, quantity))}
         onContinueShopping={() => goTo('catalog')}
       />
+    )
+  }
+
+  if (view === 'favorites') {
+    return (
+      <AccountLayout
+        user={user}
+        active="favorites"
+        favoritesCount={favorites.length}
+        cartCount={countItems(cart)}
+        onCatalog={() => goTo('catalog')}
+        onCart={() => goTo('checkout')}
+        onNavigate={goTo}
+        onLogout={logout}
+        onLogin={() => goTo('login')}
+      >
+        <FavoritesPage
+          favoriteIds={favorites}
+          onToggleFavorite={toggleFavorite}
+          onAddToCart={(product) => setCart((prev) => addToCart(prev, product))}
+          onCatalog={() => goTo('catalog')}
+        />
+      </AccountLayout>
     )
   }
 
