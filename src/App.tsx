@@ -88,6 +88,7 @@ function App() {
       submitting={submitting}
       onSubmit={({ email, password }) => authenticate(() => login(email, password))}
       onForgotPassword={() => goTo('forgot')}
+      onGuest={() => goTo('catalog')}
       onRegister={() => goTo('register')}
     />
   )

@@ -12,6 +12,7 @@ export interface LoginCredentials {
 interface LoginProps {
   onSubmit?: (credentials: LoginCredentials) => void
   onForgotPassword?: () => void
+  onGuest?: () => void
   onRegister?: () => void
   error?: string | null
   /** Mensaje informativo, p. ej. tras cambiar la contraseña. */
@@ -21,7 +22,7 @@ interface LoginProps {
 
 const perks = ['Envío a todo el país', 'Pago seguro', 'Devoluciones fáciles']
 
-function Login({ onSubmit, onForgotPassword, onRegister, error, notice, submitting = false }: LoginProps) {
+function Login({ onSubmit, onForgotPassword, onGuest, onRegister, error, notice, submitting = false }: LoginProps) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [remember, setRemember] = useState(false)
@@ -120,6 +121,14 @@ function Login({ onSubmit, onForgotPassword, onRegister, error, notice, submitti
 
         <button type="submit" className="auth-btn" disabled={submitting}>
           {submitting ? 'Ingresando…' : 'Ingresar'}
+        </button>
+
+        <div className="auth-divider">
+          <i />o<i />
+        </div>
+
+        <button type="button" className="auth-btn-outline" onClick={onGuest}>
+          Explorar como invitado
         </button>
 
         <p className="auth-foot">
