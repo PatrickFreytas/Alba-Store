@@ -320,8 +320,122 @@
   color: var(--auth-muted);
 }
 
+.auth-notice {
+  margin: 0;
+  padding: 10px 14px;
+  border: 1px solid #bfdcd4;
+  border-radius: 10px;
+  background: #e3f0ec;
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--auth-primary-dark);
+}
+
+/* Página con barra superior y tarjeta centrada (Recuperar / Nueva contraseña) */
+.auth--page {
+  flex-direction: column;
+}
+
+.auth-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 77px;
+  padding: 0 120px;
+  border-bottom: 1px solid var(--auth-border-soft);
+  background: #fff;
+}
+
+.auth-logo__mark--sm {
+  width: 36px;
+  height: 36px;
+  border-radius: 9px;
+}
+
+.auth-logo__text--dark {
+  font-size: 20px;
+  color: var(--auth-text);
+}
+
+.auth-card--page {
+  max-width: 439px;
+  padding: 40px;
+}
+
+.auth-card__icon {
+  width: 56px;
+  height: 56px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 2px;
+  border-radius: 14px;
+  background: #e3f0ec;
+  color: var(--auth-primary);
+}
+
+.auth-card--page .auth-card__subtitle {
+  margin-top: 8px;
+  line-height: 23px;
+}
+
+.auth-dev-link {
+  word-break: break-all;
+  font-size: 13px;
+  color: var(--auth-primary);
+}
+
+/* Requisitos de la nueva contraseña */
+.auth-checklist {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 14px 18px;
+  border: 1px solid var(--auth-border-soft);
+  border-radius: 10px;
+  background: #f8faf9;
+  list-style: none;
+}
+
+.auth-checklist li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  color: var(--auth-text-2);
+}
+
+.auth-checklist svg {
+  flex-shrink: 0;
+  color: var(--auth-divider-text);
+}
+
+.auth-checklist li.is-met svg {
+  color: var(--auth-primary);
+}
+
+.auth .sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
 @media (max-width: 960px) {
   .auth-brand {
     display: none;
+  }
+
+  .auth-topbar {
+    padding: 0 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .auth-card--page {
+    padding: 28px 20px;
   }
 }

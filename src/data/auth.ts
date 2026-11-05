@@ -27,3 +27,12 @@ export function login(email: string, password: string) {
 export function register(fullName: string, email: string, password: string) {
   return post<User>('/api/auth/register', { fullName, email, password })
 }
+
+/** `devResetUrl` solo llega en desarrollo, mientras no haya envío real de correos. */
+export function requestPasswordReset(email: string) {
+  return post<{ ok: true; devResetUrl?: string }>('/api/auth/forgot-password', { email })
+}
+
+export function resetPassword(token: string, password: string) {
+  return post<{ ok: true }>('/api/auth/reset-password', { token, password })
+}

@@ -1,4 +1,4 @@
-import { randomBytes, scrypt, timingSafeEqual } from 'node:crypto'
+import { createHash, randomBytes, scrypt, timingSafeEqual } from 'node:crypto'
 import { promisify } from 'node:util'
 import { Router } from 'express'
 import { pool } from './db.ts'
@@ -27,6 +27,11 @@ async function verifyPassword(password: string, stored: string) {
 function isValidPassword(password: string) {
   return password.length >= MIN_PASSWORD_LENGTH && /[a-zA-Z]/.test(password) && /\d/.test(password)
 }
+
+const RESET_TOKEN_TTL_MINUTES = 60
+const APP_URL = process.env.APP_URL ?? 'http://localhost:5173'
+
+const hashToken = (token: string) => createHash('sha256').update(token).digest('hex')
 
 interface UserRow {
   id: number
@@ -84,5 +89,82 @@ authRouter.post('/login', async (req, res) => {
   } catch (error) {
     console.error(error)
     res.status(500).json({ error: 'No se pudo iniciar sesión.' })
+  }
+})
+
+// Siempre responde lo mismo, exista o no la cuenta, para no revelar qué correos están registrados.
+authRouter.post('/forgot-password', async (req, res) => {
+  const email = String(req.body?.email ?? '').trim().toLowerCase()
+  if (!EMAIL_RE.test(email)) return res.status(400).json({ error: 'Ingresa un correo electrónico válido.' })
+
+  try {
+    const { rows } = await pool.query<{ id: number }>('SELECT id FROM users WHERE lower(email) = $1', [email])
+    const payload: { ok: true; devResetUrl?: string } = { ok: true }
+
+    if (rows[0]) {
+      const token = randomBytes(32).toString('base64url')
+      await pool.query(
+        `INSERT INTO password_resets (user_id, token_hash, expires_at)
+         VALUES ($1, $2, now() + make_interval(mins => $3))`,
+        [rows[0].id, hashToken(token), RESET_TOKEN_TTL_MINUTES],
+      )
+      const resetUrl = `${APP_URL}/?reset=${token}`
+      // Aún no hay servicio de correo: en desarrollo el enlace se muestra en consola y en la respuesta.
+      if (process.env.NODE_ENV !== 'production') {
+        console.log(`[recuperar contraseña] ${email}: ${resetUrl}`)
+        payload.devResetUrl = resetUrl
+      }
+    }
+
+    res.json(payload)
+  } catch (error) {
+    console.error(error)
+    res.status(500).json({ error: 'No se pudo enviar el enlace.' })
+  }
+})
+
+authRouter.post('/reset-password', async (req, res) => {
+  const token = String(req.body?.token ?? '')
+  const password = String(req.body?.password ?? '')
+
+  if (!isValidPassword(password)) {
+    return res
+      .status(400)
+      .json({ error: `La contraseña debe tener al menos ${MIN_PASSWORD_LENGTH} caracteres, con letras y números.` })
+  }
+
+  const client = await pool.connect()
+  try {
+    await client.query('BEGIN')
+    const { rows } = await client.query<{ id: number; userId: number; passwordHash: string }>(
+      `SELECT r.id, r.user_id AS "userId", u.password_hash AS "passwordHash"
+       FROM password_resets r JOIN users u ON u.id = r.user_id
+       WHERE r.token_hash = $1 AND r.used_at IS NULL AND r.expires_at > now()
+       FOR UPDATE OF r`,
+      [hashToken(token)],
+    )
+    const reset = rows[0]
+    if (!reset) {
+      await client.query('ROLLBACK')
+      return res.status(400).json({ error: 'El enlace no es válido o ya expiró. Solicita uno nuevo.' })
+    }
+    if (await verifyPassword(password, reset.passwordHash)) {
+      await client.query('ROLLBACK')
+      return res.status(400).json({ error: 'La nueva contraseña debe ser diferente a la anterior.' })
+    }
+
+    await client.query('UPDATE users SET password_hash = $1 WHERE id = $2', [await hashPassword(password), reset.userId])
+    // Invalida este y cualquier otro enlace pendiente del usuario
+    await client.query('UPDATE password_resets SET used_at = now() WHERE user_id = $1 AND used_at IS NULL', [
+      reset.userId,
+    ])
+    await client.query('COMMIT')
+    res.json({ ok: true })
+  } catch (error) {
+    await client.query('ROLLBACK').catch(() => {})
+    console.error(error)
+    res.status(500).json({ error: 'No se pudo actualizar la contraseña.' })
+  } finally {
+    client.release()
   }
 })
