@@ -1,13 +1,14 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Login from './components/Login/Login'
 import Register from './components/Register/Register'
 import ForgotPassword from './components/ForgotPassword/ForgotPassword'
 import ResetPassword from './components/ResetPassword/ResetPassword'
 import Catalog from './components/Catalog/Catalog'
+import Checkout from './components/Checkout/Checkout'
 import { login, register, requestPasswordReset, resetPassword, type User } from './data/auth'
-import { addToCart, countItems, type CartItem } from './data/cart'
+import { addToCart, countItems, setQuantity, type CartItem } from './data/cart'
 
-type View = 'login' | 'register' | 'forgot' | 'reset' | 'catalog'
+type View = 'login' | 'register' | 'forgot' | 'reset' | 'catalog' | 'checkout'
 
 // El enlace del correo de recuperación llega como /?reset=<token>
 const initialResetToken = new URLSearchParams(window.location.search).get('reset')
@@ -51,13 +52,29 @@ function App() {
     goTo('login')
   }
 
+  // Cada vista empieza arriba (p. ej. al ir del catálogo ya desplazado al checkout)
+  useEffect(() => {
+    window.scrollTo(0, 0)
+  }, [view])
+
   if (view === 'catalog') {
     return (
       <Catalog
         user={user}
         cartCount={countItems(cart)}
         onAddToCart={(product) => setCart((prev) => addToCart(prev, product))}
+        onCartClick={() => goTo('checkout')}
         onAccountClick={logout}
+      />
+    )
+  }
+
+  if (view === 'checkout') {
+    return (
+      <Checkout
+        items={cart}
+        onQuantityChange={(id, quantity) => setCart((prev) => setQuantity(prev, id, quantity))}
+        onContinueShopping={() => goTo('catalog')}
       />
     )
   }
