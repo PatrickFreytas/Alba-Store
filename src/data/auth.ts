@@ -23,3 +23,7 @@ async function post<T>(url: string, body: unknown): Promise<T> {
 export function login(email: string, password: string) {
   return post<User>('/api/auth/login', { email, password })
 }
+
+export function register(fullName: string, email: string, password: string) {
+  return post<User>('/api/auth/register', { fullName, email, password })
+}

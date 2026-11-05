@@ -11,13 +11,14 @@ export interface LoginCredentials {
 
 interface LoginProps {
   onSubmit?: (credentials: LoginCredentials) => void
+  onRegister?: () => void
   error?: string | null
   submitting?: boolean
 }
 
 const perks = ['Envío a todo el país', 'Pago seguro', 'Devoluciones fáciles']
 
-function Login({ onSubmit, error, submitting = false }: LoginProps) {
+function Login({ onSubmit, onRegister, error, submitting = false }: LoginProps) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [remember, setRemember] = useState(false)
@@ -108,6 +109,13 @@ function Login({ onSubmit, error, submitting = false }: LoginProps) {
         <button type="submit" className="auth-btn" disabled={submitting}>
           {submitting ? 'Ingresando…' : 'Ingresar'}
         </button>
+
+        <p className="auth-foot">
+          ¿No tienes cuenta?{' '}
+          <button type="button" className="auth-link auth-link--bold" onClick={onRegister}>
+            Regístrate gratis
+          </button>
+        </p>
       </form>
     </AuthLayout>
   )
