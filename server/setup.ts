@@ -16,8 +16,10 @@ try {
     [DEMO_USER.fullName, DEMO_USER.email, await hashPassword(DEMO_USER.password)],
   )
 
-  const { rows } = await pool.query<{ users: string }>('SELECT count(*) AS users FROM users')
-  console.log(`Base de datos lista en "${process.env.PGDATABASE}": ${rows[0].users} usuarios.`)
+  const { rows } = await pool.query<{ products: string; users: string }>(
+    'SELECT (SELECT count(*) FROM products) AS products, (SELECT count(*) FROM users) AS users',
+  )
+  console.log(`Base de datos lista en "${process.env.PGDATABASE}": ${rows[0].products} productos, ${rows[0].users} usuarios.`)
   console.log(`Cuenta demo: ${DEMO_USER.email} / ${DEMO_USER.password}`)
 } finally {
   await pool.end()

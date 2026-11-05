@@ -3,9 +3,10 @@ import Login from './components/Login/Login'
 import Register from './components/Register/Register'
 import ForgotPassword from './components/ForgotPassword/ForgotPassword'
 import ResetPassword from './components/ResetPassword/ResetPassword'
+import Catalog from './components/Catalog/Catalog'
 import { login, register, requestPasswordReset, resetPassword, type User } from './data/auth'
 
-type View = 'login' | 'register' | 'forgot' | 'reset'
+type View = 'login' | 'register' | 'forgot' | 'reset' | 'catalog'
 
 // El enlace del correo de recuperación llega como /?reset=<token>
 const initialResetToken = new URLSearchParams(window.location.search).get('reset')
@@ -35,6 +36,7 @@ function App() {
     try {
       setUser(await request())
       setNotice(null)
+      setView('catalog')
     } catch (error) {
       setAuthError((error as Error).message)
     } finally {
@@ -47,15 +49,8 @@ function App() {
     goTo('login')
   }
 
-  if (user) {
-    return (
-      <main style={{ padding: 32 }}>
-        <p>Hola, {user.fullName}. Aquí se mostrará el catálogo.</p>
-        <button type="button" onClick={logout}>
-          Cerrar sesión
-        </button>
-      </main>
-    )
+  if (view === 'catalog') {
+    return <Catalog user={user} onAccountClick={logout} />
   }
 
   if (view === 'register') {
