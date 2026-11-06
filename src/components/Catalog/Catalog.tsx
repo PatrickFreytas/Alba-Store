@@ -1,0 +1,176 @@
+import { useEffect, useMemo, useState } from 'react'
+import Header from '../Header/Header'
+import ProductCard from '../ProductCard/ProductCard'
+import { categories, fetchProducts, type Category, type Product } from '../../data/products'
+import type { User } from '../../data/auth'
+import iconCheckmark from '../../assets/icon-checkmark.svg'
+import './Catalog.css'
+
+const priceRanges = [
+  { id: 'lt100', label: 'Hasta S/ 100', test: (p: number) => p <= 100 },
+  { id: '100-300', label: 'S/ 100 – S/ 300', test: (p: number) => p > 100 && p <= 300 },
+  { id: 'gt300', label: 'Más de S/ 300', test: (p: number) => p > 300 },
+]
+
+interface CatalogProps {
+  user: User | null
+  onAccountClick?: () => void
+}
+
+function Catalog({
+  user,
+  onAccountClick,
+}: CatalogProps) {
+  const [category, setCategory] = useState<Category | null>(null)
+  const [selectedPrices, setSelectedPrices] = useState<string[]>([])
+  const [inStockOnly, setInStockOnly] = useState(true)
+  const [fastShippingOnly, setFastShippingOnly] = useState(false)
+  const [products, setProducts] = useState<Product[]>([])
+  const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading')
+
+  useEffect(() => {
+    const controller = new AbortController()
+    fetchProducts(controller.signal)
+      .then((data) => {
+        setProducts(data)
+        setStatus('ready')
+      })
+      .catch((error: unknown) => {
+        if (controller.signal.aborted) return
+        console.error(error)
+        setStatus('error')
+      })
+    return () => controller.abort()
+  }, [])
+
+  const filtered = useMemo(() => {
+    const result = products.filter((p) => {
+      if (category && p.category !== category) return false
+      if (selectedPrices.length && !priceRanges.some((r) => selectedPrices.includes(r.id) && r.test(p.price))) return false
+      if (inStockOnly && !p.inStock) return false
+      if (fastShippingOnly && !p.fastShipping) return false
+      return true
+    })
+    return result
+  }, [products, category, selectedPrices, inStockOnly, fastShippingOnly])
+
+  const togglePrice = (id: string) => {
+    setSelectedPrices((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]))
+  }
+
+  const countFor = (c: Category | null) => (c ? products.filter((p) => p.category === c).length : products.length)
+
+  return (
+    <div className="catalog">
+      <Header
+        accountLabel={user ? user.fullName.split(' ')[0] : 'Mi cuenta'}
+        onLogoClick={() => {
+          setCategory(null)
+        }}
+        onAccountClick={onAccountClick}
+      />
+
+      <main className="catalog__main">
+        <section className="catalog-banner">
+          <div>
+            <span className="catalog-banner__eyebrow">Temporada nueva</span>
+            <h1 className="catalog-banner__title">Descubre lo nuevo del catálogo</h1>
+            <p className="catalog-banner__text">Envío gratis en compras desde S/ 199.</p>
+          </div>
+          <a href="#productos" className="catalog-banner__cta">
+            Ver productos
+          </a>
+        </section>
+
+        <div className="catalog__layout" id="productos">
+          <aside className="catalog-filters">
+            <div className="catalog-filters__group">
+              <h2 className="catalog-filters__title">Categorías</h2>
+              {[null, ...categories].map((c) => (
+                <button
+                  key={c ?? 'all'}
+                  type="button"
+                  className={`catalog-category${category === c ? ' is-active' : ''}`}
+                  onClick={() => setCategory(c)}
+                  aria-pressed={category === c}
+                >
+                  {c ?? 'Todos'}
+                  <span>{countFor(c)}</span>
+                </button>
+              ))}
+            </div>
+
+            <div className="catalog-filters__group">
+              <h2 className="catalog-filters__title">Precio</h2>
+              {priceRanges.map((range) => (
+                <label key={range.id} className="catalog-check">
+                  <input
+                    type="checkbox"
+                    checked={selectedPrices.includes(range.id)}
+                    onChange={() => togglePrice(range.id)}
+                  />
+                  <span className="catalog-check__box" aria-hidden="true">
+                    <img src={iconCheckmark} width="12" height="9" alt="" />
+                  </span>
+                  {range.label}
+                </label>
+              ))}
+            </div>
+
+            <div className="catalog-filters__group">
+              <h2 className="catalog-filters__title">Disponibilidad</h2>
+              <label className="catalog-check">
+                <input type="checkbox" checked={inStockOnly} onChange={(e) => setInStockOnly(e.target.checked)} />
+                <span className="catalog-check__box" aria-hidden="true">
+                  <img src={iconCheckmark} width="12" height="9" alt="" />
+                </span>
+                En stock
+              </label>
+              <label className="catalog-check">
+                <input
+                  type="checkbox"
+                  checked={fastShippingOnly}
+                  onChange={(e) => setFastShippingOnly(e.target.checked)}
+                />
+                <span className="catalog-check__box" aria-hidden="true">
+                  <img src={iconCheckmark} width="12" height="9" alt="" />
+                </span>
+                Envío en 24 h
+              </label>
+            </div>
+          </aside>
+
+          <section className="catalog-results">
+            <div className="catalog-results__head">
+              <div>
+                <h2 className="catalog-results__title">{category ?? 'Todos los productos'}</h2>
+                <p className="catalog-results__count">
+                  {filtered.length} {filtered.length === 1 ? 'producto encontrado' : 'productos encontrados'}
+                </p>
+              </div>
+            </div>
+
+            {status === 'loading' ? (
+              <p className="catalog-empty">Cargando productos…</p>
+            ) : status === 'error' ? (
+              <p className="catalog-empty">No se pudieron cargar los productos. Verifica que la API esté encendida.</p>
+            ) : filtered.length > 0 ? (
+              <div className="catalog-grid">
+                {filtered.map((product) => (
+                  <ProductCard
+                    key={product.id}
+                    product={product}
+                  />
+                ))}
+              </div>
+            ) : (
+              <p className="catalog-empty">No encontramos productos con esos filtros.</p>
+            )}
+          </section>
+        </div>
+      </main>
+    </div>
+  )
+}
+
+export default Catalog
