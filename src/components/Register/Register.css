@@ -1,0 +1,55 @@
+.register-benefits {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.register-benefit {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 15px;
+  line-height: 18px;
+  color: #e4f0ed;
+}
+
+.register-strength {
+  display: flex;
+  gap: 6px;
+  margin-top: 3px;
+}
+
+.register-strength span {
+  flex: 1;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--auth-border-soft);
+  transition: background-color 0.2s;
+}
+
+.register-strength span.is-active {
+  background: var(--auth-primary);
+}
+
+.register-hint {
+  margin: -2px 0 0;
+  font-size: 13px;
+  color: var(--auth-muted);
+}
+
+.register-terms {
+  align-items: flex-start;
+  line-height: 20px;
+}
+
+.register-terms .auth-link {
+  display: inline;
+  text-align: left;
+}
+
+.register-terms .auth-check__box {
+  margin-top: 1px;
+}
