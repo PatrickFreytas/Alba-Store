@@ -1,0 +1,241 @@
+.confirmation {
+  min-height: 100svh;
+  background: var(--color-bg);
+}
+
+.confirmation__main {
+  display: flex;
+  justify-content: center;
+  padding: 96px 16px 64px;
+}
+
+.confirmation-card {
+  width: 100%;
+  max-width: 559px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 48px 40px 48px;
+  border: 1px solid var(--color-border-soft);
+  border-radius: 20px;
+  background: #fff;
+  text-align: center;
+}
+
+.confirmation-card__icon {
+  width: 80px;
+  height: 80px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 16px;
+  border-radius: 50%;
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+}
+
+.confirmation-card__icon.is-amber {
+  background: #fcefd6;
+  color: #8a5a0b;
+}
+
+/* Billetera digital: código QR */
+.payment-qr {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  margin-top: 24px;
+  padding: 24px;
+  border: 1px solid var(--color-border-soft);
+  border-radius: 14px;
+}
+
+.payment-qr__code {
+  width: 168px;
+  height: 168px;
+}
+
+.payment-qr.is-expired .payment-qr__code {
+  opacity: 0.15;
+}
+
+.payment-qr__amount {
+  font-family: var(--font-heading);
+  font-size: 28px;
+  line-height: 36px;
+  color: var(--color-text);
+}
+
+.payment-qr__hint {
+  font-size: 14px;
+  color: var(--color-muted);
+}
+
+.payment-qr__timer {
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: #fcefd6;
+  font-size: 13px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: #8a5a0b;
+}
+
+.payment-qr__timer.is-expired {
+  background: #fdf0f0;
+  color: #a12828;
+}
+
+/* Contra entrega: aviso */
+.confirmation-notice {
+  width: 100%;
+  display: flex;
+  gap: 12px;
+  margin-top: 24px;
+  padding: 14px 16px;
+  border: 1px solid #f2d9a6;
+  border-radius: 12px;
+  background: #fcefd6;
+  text-align: left;
+  color: #8a5a0b;
+}
+
+.confirmation-notice svg {
+  flex-shrink: 0;
+}
+
+.confirmation-notice strong {
+  font-size: 15px;
+  color: var(--color-text);
+}
+
+.confirmation-notice p {
+  margin: 4px 0 0;
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--color-muted);
+}
+
+.confirmation-details dd.is-pending {
+  color: #8a5a0b;
+}
+
+.confirmation-card__title {
+  margin: 0;
+  outline: none;
+  font-family: var(--font-heading);
+  font-size: 34px;
+  line-height: 43px;
+  color: var(--color-text);
+}
+
+.confirmation-card__text {
+  max-width: 460px;
+  margin: 9px 0 0;
+  font-size: 16px;
+  line-height: 24px;
+  color: var(--color-muted);
+}
+
+.confirmation-details {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+  margin: 24px 0 21px;
+  padding: 20px;
+  border: 1px solid var(--color-border-soft);
+  border-radius: 14px;
+  background: var(--color-surface-2);
+  text-align: left;
+}
+
+.confirmation-details div {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  font-size: 15px;
+}
+
+.confirmation-details dt {
+  flex-shrink: 0;
+  color: var(--color-muted);
+}
+
+.confirmation-details dd {
+  margin: 0;
+  text-align: right;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.confirmation-details .confirmation-details__total {
+  align-items: center;
+  margin-top: 0;
+  padding-top: 12px;
+  border-top: 1px solid var(--color-border-soft);
+}
+
+.confirmation-details__total dt {
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.confirmation-details__total dd {
+  font-family: var(--font-heading);
+  font-size: 20px;
+}
+
+.confirmation-actions {
+  width: 100%;
+  display: flex;
+  gap: 13px;
+}
+
+.confirmation-actions > * {
+  flex: 1;
+}
+
+.confirmation-btn-outline {
+  height: 53px;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: #fff;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--color-text);
+  transition: background-color 0.15s;
+}
+
+.confirmation-btn-outline:hover {
+  background: var(--color-bg);
+}
+
+@media (max-width: 640px) {
+  .confirmation__main {
+    padding-top: 32px;
+  }
+
+  .confirmation-card {
+    padding: 32px 20px;
+  }
+
+  .confirmation-card__title {
+    font-size: 28px;
+    line-height: 36px;
+  }
+
+  .confirmation-actions {
+    flex-direction: column;
+  }
+
+  .confirmation-details div {
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .confirmation-details dd {
+    text-align: left;
+  }
+}
