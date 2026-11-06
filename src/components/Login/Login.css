@@ -1,0 +1,17 @@
+.login-perks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.login-perk {
+  padding: 7px 14px;
+  border-radius: 999px;
+  background: var(--auth-brand-chip);
+  font-size: 14px;
+  line-height: 19px;
+  color: #e4f0ed;
+}
