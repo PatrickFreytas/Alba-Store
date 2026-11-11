@@ -3,11 +3,14 @@ import Header from '../Header/Header'
 import ProductCard from '../ProductCard/ProductCard'
 import { categories, fetchProducts, type Category, type Product } from '../../data/products'
 import type { User } from '../../data/auth'
+import iconSearchSm from '../../assets/icon-search-sm.svg'
 import iconChevronDown from '../../assets/icon-chevron-down.svg'
 import iconCheckmark from '../../assets/icon-checkmark.svg'
 import './Catalog.css'
 
 type SortOption = 'relevance' | 'price-asc' | 'price-desc' | 'rating'
+
+const popularSearches = ['Audífonos', 'Mochila', 'Zapatillas', 'Hogar', 'Botella']
 
 const priceRanges = [
   { id: 'lt100', label: 'Hasta S/ 100', test: (p: number) => p <= 100 },
@@ -16,6 +19,10 @@ const priceRanges = [
 ]
 
 const PAGE_SIZE = 8
+
+function normalize(text: string) {
+  return text.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
+}
 
 interface CatalogProps {
   user: User | null
@@ -26,6 +33,7 @@ function Catalog({
   user,
   onAccountClick,
 }: CatalogProps) {
+  const [search, setSearch] = useState('')
   const [category, setCategory] = useState<Category | null>(null)
   const [selectedPrices, setSelectedPrices] = useState<string[]>([])
   const [inStockOnly, setInStockOnly] = useState(true)
@@ -56,7 +64,9 @@ function Catalog({
   }
 
   const filtered = useMemo(() => {
+    const query = normalize(search.trim())
     const result = products.filter((p) => {
+      if (query && !normalize(`${p.name} ${p.category}`).includes(query)) return false
       if (category && p.category !== category) return false
       if (selectedPrices.length && !priceRanges.some((r) => selectedPrices.includes(r.id) && r.test(p.price))) return false
       if (inStockOnly && !p.inStock) return false
@@ -67,7 +77,7 @@ function Catalog({
     if (sort === 'price-desc') result.sort((a, b) => b.price - a.price)
     if (sort === 'rating') result.sort((a, b) => b.rating - a.rating)
     return result
-  }, [products, category, selectedPrices, inStockOnly, fastShippingOnly, sort])
+  }, [products, search, category, selectedPrices, inStockOnly, fastShippingOnly, sort])
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
   const currentPage = Math.min(page, totalPages)
@@ -83,8 +93,11 @@ function Catalog({
   return (
     <div className="catalog">
       <Header
+        search={search}
+        onSearchChange={resetPage(setSearch)}
         accountLabel={user ? user.fullName.split(' ')[0] : 'Mi cuenta'}
         onLogoClick={() => {
+          setSearch('')
           setCategory(null)
           setPage(1)
         }}
@@ -102,6 +115,16 @@ function Catalog({
             Ver productos
           </a>
         </section>
+
+        <div className="catalog-popular">
+          <span className="catalog-popular__label">Búsquedas populares:</span>
+          {popularSearches.map((term) => (
+            <button key={term} type="button" className="catalog-chip" onClick={() => resetPage(setSearch)(term)}>
+              <img src={iconSearchSm} width="10.6167" height="10.6167" alt="" />
+              {term}
+            </button>
+          ))}
+        </div>
 
         <div className="catalog__layout" id="productos">
           <aside className="catalog-filters">
