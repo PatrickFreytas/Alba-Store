@@ -26,12 +26,24 @@ function normalize(text: string) {
 
 interface CatalogProps {
   user: User | null
+  cartCount: number
+  favorites: number[]
+  onAddToCart: (product: Product) => void
+  onToggleFavorite: (id: number) => void
   onAccountClick?: () => void
+  onCartClick?: () => void
+  onFavoritesClick?: () => void
 }
 
 function Catalog({
   user,
+  cartCount,
+  favorites,
+  onAddToCart,
+  onToggleFavorite,
   onAccountClick,
+  onCartClick,
+  onFavoritesClick,
 }: CatalogProps) {
   const [search, setSearch] = useState('')
   const [category, setCategory] = useState<Category | null>(null)
@@ -95,6 +107,7 @@ function Catalog({
       <Header
         search={search}
         onSearchChange={resetPage(setSearch)}
+        cartCount={cartCount}
         accountLabel={user ? user.fullName.split(' ')[0] : 'Mi cuenta'}
         onLogoClick={() => {
           setSearch('')
@@ -102,6 +115,8 @@ function Catalog({
           setPage(1)
         }}
         onAccountClick={onAccountClick}
+        onCartClick={onCartClick}
+        onFavoritesClick={onFavoritesClick}
       />
 
       <main className="catalog__main">
@@ -216,6 +231,9 @@ function Catalog({
                   <ProductCard
                     key={product.id}
                     product={product}
+                    isFavorite={favorites.includes(product.id)}
+                    onToggleFavorite={onToggleFavorite}
+                    onAddToCart={() => onAddToCart(product)}
                   />
                 ))}
               </div>

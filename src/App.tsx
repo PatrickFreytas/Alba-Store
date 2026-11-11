@@ -1,12 +1,16 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Login from './components/Login/Login'
 import Register from './components/Register/Register'
 import ForgotPassword from './components/ForgotPassword/ForgotPassword'
 import ResetPassword from './components/ResetPassword/ResetPassword'
 import Catalog from './components/Catalog/Catalog'
+import Checkout from './components/Checkout/Checkout'
+import AccountLayout, { type AccountSection } from './components/Account/AccountLayout'
+import FavoritesPage from './components/Account/FavoritesPage'
 import { login, register, requestPasswordReset, resetPassword, type User } from './data/auth'
+import { addToCart, countItems, setQuantity, type CartItem } from './data/cart'
 
-type View = 'login' | 'register' | 'forgot' | 'reset' | 'catalog'
+type View = 'login' | 'register' | 'forgot' | 'reset' | 'catalog' | 'checkout' | AccountSection
 
 // El enlace del correo de recuperación llega como /?reset=<token>
 const initialResetToken = new URLSearchParams(window.location.search).get('reset')
@@ -18,6 +22,8 @@ function App() {
   const [authError, setAuthError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
+  const [cart, setCart] = useState<CartItem[]>([])
+  const [favorites, setFavorites] = useState<number[]>([])
 
   const goTo = (next: View) => {
     setAuthError(null)
@@ -49,8 +55,60 @@ function App() {
     goTo('login')
   }
 
+  // Cada vista empieza arriba (p. ej. al ir del catálogo ya desplazado al checkout)
+  useEffect(() => {
+    window.scrollTo(0, 0)
+  }, [view])
+
+  const toggleFavorite = (id: number) =>
+    setFavorites((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]))
+
   if (view === 'catalog') {
-    return <Catalog user={user} onAccountClick={logout} />
+    return (
+      <Catalog
+        user={user}
+        cartCount={countItems(cart)}
+        favorites={favorites}
+        onAddToCart={(product) => setCart((prev) => addToCart(prev, product))}
+        onToggleFavorite={toggleFavorite}
+        onCartClick={() => goTo('checkout')}
+        onFavoritesClick={() => goTo('favorites')}
+        onAccountClick={() => (user ? goTo('favorites') : goTo('login'))}
+      />
+    )
+  }
+
+  if (view === 'checkout') {
+    return (
+      <Checkout
+        items={cart}
+        onQuantityChange={(id, quantity) => setCart((prev) => setQuantity(prev, id, quantity))}
+        onContinueShopping={() => goTo('catalog')}
+      />
+    )
+  }
+
+  if (view === 'favorites') {
+    return (
+      <AccountLayout
+        user={user}
+        active="favorites"
+        favoritesCount={favorites.length}
+        cartCount={countItems(cart)}
+        onCatalog={() => goTo('catalog')}
+        onCart={() => goTo('checkout')}
+        onNavigate={goTo}
+        onLogout={logout}
+        onLogin={() => goTo('login')}
+      >
+        <FavoritesPage
+          favoriteIds={favorites}
+          onToggleFavorite={toggleFavorite}
+          onAddToCart={(product) => setCart((prev) => addToCart(prev, product))}
+          onCatalog={() => goTo('catalog')}
+        />
+      </AccountLayout>
+    )
   }
 
   if (view === 'register') {
