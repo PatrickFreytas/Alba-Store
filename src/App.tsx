@@ -5,12 +5,25 @@ import ForgotPassword from './components/ForgotPassword/ForgotPassword'
 import ResetPassword from './components/ResetPassword/ResetPassword'
 import Catalog from './components/Catalog/Catalog'
 import Checkout from './components/Checkout/Checkout'
+import OrderConfirmation from './components/OrderConfirmation/OrderConfirmation'
+import OrderTracking from './components/OrderTracking/OrderTracking'
 import AccountLayout, { type AccountSection } from './components/Account/AccountLayout'
+import OrdersPage from './components/Account/OrdersPage'
 import FavoritesPage from './components/Account/FavoritesPage'
 import { login, register, requestPasswordReset, resetPassword, type User } from './data/auth'
-import { addToCart, countItems, setQuantity, type CartItem } from './data/cart'
+import { addToCart, countItems, mergeItems, setQuantity, type CartItem, type ShippingData } from './data/cart'
+import { confirmPayment, renewPaymentCode, type Order } from './data/orders'
 
-type View = 'login' | 'register' | 'forgot' | 'reset' | 'catalog' | 'checkout' | AccountSection
+type View =
+  | 'login'
+  | 'register'
+  | 'forgot'
+  | 'reset'
+  | 'catalog'
+  | 'checkout'
+  | 'confirmation'
+  | 'tracking'
+  | AccountSection
 
 // El enlace del correo de recuperación llega como /?reset=<token>
 const initialResetToken = new URLSearchParams(window.location.search).get('reset')
@@ -24,8 +37,15 @@ function App() {
   const [submitting, setSubmitting] = useState(false)
   const [cart, setCart] = useState<CartItem[]>([])
   const [favorites, setFavorites] = useState<number[]>([])
+  // Solo frontend: los pedidos viven en memoria, separados por usuario
+  const [ordersByUser, setOrdersByUser] = useState<Record<number, Order[]>>({})
+  const [activeOrderNumber, setActiveOrderNumber] = useState<string | null>(null)
+  const [checkoutDraft, setCheckoutDraft] = useState<ShippingData | null>(null)
   // A dónde volver después de iniciar sesión o registrarse (p. ej. el checkout)
   const [returnTo, setReturnTo] = useState<View | null>(null)
+
+  const orders = user ? (ordersByUser[user.id] ?? []) : []
+  const activeOrder = orders.find((o) => o.number === activeOrderNumber) ?? null
 
   const goTo = (next: View) => {
     setAuthError(null)
@@ -61,8 +81,17 @@ function App() {
 
   const logout = () => {
     setUser(null)
+    setActiveOrderNumber(null)
     goTo('login')
   }
+
+  const updateOrders = (update: (list: Order[]) => Order[]) => {
+    if (!user) return
+    setOrdersByUser((prev) => ({ ...prev, [user.id]: update(prev[user.id] ?? []) }))
+  }
+
+  const updateActiveOrder = (update: (order: Order) => Order) =>
+    updateOrders((list) => list.map((o) => (o.number === activeOrderNumber ? update(o) : o)))
 
   // Cada vista empieza arriba (p. ej. al ir del catálogo ya desplazado al checkout)
   useEffect(() => {
@@ -71,6 +100,11 @@ function App() {
 
   const toggleFavorite = (id: number) =>
     setFavorites((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]))
+
+  const openOrder = (order: Order) => {
+    setActiveOrderNumber(order.number)
+    goTo(order.status === 'pending_payment' ? 'confirmation' : 'tracking')
+  }
 
   if (view === 'catalog') {
     return (
@@ -82,7 +116,7 @@ function App() {
         onToggleFavorite={toggleFavorite}
         onCartClick={() => goTo('checkout')}
         onFavoritesClick={() => goTo('favorites')}
-        onAccountClick={() => (user ? goTo('favorites') : goTo('login'))}
+        onAccountClick={() => (user ? goTo('orders') : goTo('login'))}
       />
     )
   }
@@ -92,11 +126,15 @@ function App() {
       <Checkout
         items={cart}
         user={user}
+        initialShipping={checkoutDraft}
         onQuantityChange={(id, quantity) => setCart((prev) => setQuantity(prev, id, quantity))}
         onContinueShopping={() => goTo('catalog')}
-        onOrderPlaced={() => {
+        onOrderPlaced={(placed) => {
+          updateOrders((list) => [placed, ...list])
+          setActiveOrderNumber(placed.number)
           setCart([])
-          goTo('catalog')
+          setCheckoutDraft(null)
+          goTo('confirmation')
         }}
         onLogin={() => loginThenReturn('checkout')}
         onRegister={() => loginThenReturn('checkout', 'register')}
@@ -104,25 +142,68 @@ function App() {
     )
   }
 
-  if (view === 'favorites') {
+  if (view === 'confirmation' && activeOrder) {
+    return (
+      <OrderConfirmation
+        order={activeOrder}
+        onBackToCatalog={() => goTo('catalog')}
+        onTrackOrder={() => goTo('tracking')}
+        onConfirmPayment={() => updateActiveOrder((o) => confirmPayment(o))}
+        onRenewCode={() => updateActiveOrder((o) => renewPaymentCode(o))}
+        onChangeMethod={() => {
+          // Se descarta el pedido pendiente y sus productos vuelven al carrito
+          setCart((prev) => mergeItems(prev, activeOrder.items))
+          setCheckoutDraft(activeOrder.shipping)
+          updateOrders((list) => list.filter((o) => o.number !== activeOrder.number))
+          setActiveOrderNumber(null)
+          goTo('checkout')
+        }}
+      />
+    )
+  }
+
+  if (view === 'tracking' && activeOrder) {
+    return (
+      <OrderTracking
+        order={activeOrder}
+        onBack={() => goTo('orders')}
+        onCatalog={() => goTo('catalog')}
+        onCompletePayment={() => goTo('confirmation')}
+      />
+    )
+  }
+
+  if (view === 'orders' || view === 'favorites' || view === 'confirmation' || view === 'tracking') {
+    // confirmation/tracking sin pedido activo (p. ej. tras cerrar sesión) caen en "Mis pedidos"
+    const section: AccountSection = view === 'favorites' ? 'favorites' : 'orders'
     return (
       <AccountLayout
         user={user}
-        active="favorites"
+        active={section}
         favoritesCount={favorites.length}
         cartCount={countItems(cart)}
         onCatalog={() => goTo('catalog')}
         onCart={() => goTo('checkout')}
         onNavigate={goTo}
         onLogout={logout}
-        onLogin={() => loginThenReturn('favorites')}
+        onLogin={() => loginThenReturn(section)}
       >
-        <FavoritesPage
-          favoriteIds={favorites}
-          onToggleFavorite={toggleFavorite}
-          onAddToCart={(product) => setCart((prev) => addToCart(prev, product))}
-          onCatalog={() => goTo('catalog')}
-        />
+        {section === 'favorites' ? (
+          <FavoritesPage
+            favoriteIds={favorites}
+            onToggleFavorite={toggleFavorite}
+            onAddToCart={(product) => setCart((prev) => addToCart(prev, product))}
+            onCatalog={() => goTo('catalog')}
+          />
+        ) : (
+          <OrdersPage
+            orders={orders}
+            signedIn={user !== null}
+            onOpenOrder={openOrder}
+            onCatalog={() => goTo('catalog')}
+            onLogin={() => loginThenReturn('orders')}
+          />
+        )}
       </AccountLayout>
     )
   }

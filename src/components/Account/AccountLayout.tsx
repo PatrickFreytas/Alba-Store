@@ -5,7 +5,7 @@ import iconCart from '../../assets/icon-cart.svg'
 import '../Header/Header.css'
 import './Account.css'
 
-export type AccountSection = 'favorites'
+export type AccountSection = 'orders' | 'favorites'
 
 interface AccountLayoutProps {
   user: User | null
@@ -42,6 +42,7 @@ function AccountLayout({
   children,
 }: AccountLayoutProps) {
   const items: { id: AccountSection; label: string; count?: number }[] = [
+    { id: 'orders', label: 'Mis pedidos' },
     { id: 'favorites', label: 'Favoritos', count: favoritesCount },
   ]
 
