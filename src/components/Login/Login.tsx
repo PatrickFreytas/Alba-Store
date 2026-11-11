@@ -11,13 +11,17 @@ export interface LoginCredentials {
 
 interface LoginProps {
   onSubmit?: (credentials: LoginCredentials) => void
+  onForgotPassword?: () => void
+  onRegister?: () => void
   error?: string | null
+  /** Mensaje informativo, p. ej. tras cambiar la contraseña. */
+  notice?: string | null
   submitting?: boolean
 }
 
 const perks = ['Envío a todo el país', 'Pago seguro', 'Devoluciones fáciles']
 
-function Login({ onSubmit, error, submitting = false }: LoginProps) {
+function Login({ onSubmit, onForgotPassword, onRegister, error, notice, submitting = false }: LoginProps) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [remember, setRemember] = useState(false)
@@ -48,6 +52,12 @@ function Login({ onSubmit, error, submitting = false }: LoginProps) {
           <p className="auth-card__subtitle">Bienvenido de nuevo. Ingresa tus datos.</p>
         </header>
 
+        {notice && (
+          <p className="auth-notice" role="status">
+            {notice}
+          </p>
+        )}
+
         <div className="auth-field">
           <label htmlFor="login-email" className="auth-label">
             Correo electrónico
@@ -70,6 +80,9 @@ function Login({ onSubmit, error, submitting = false }: LoginProps) {
             <label htmlFor="login-password" className="auth-label">
               Contraseña
             </label>
+            <button type="button" className="auth-link" onClick={onForgotPassword}>
+              ¿Olvidaste tu contraseña?
+            </button>
           </div>
           <div className="auth-input">
             <input
@@ -108,6 +121,13 @@ function Login({ onSubmit, error, submitting = false }: LoginProps) {
         <button type="submit" className="auth-btn" disabled={submitting}>
           {submitting ? 'Ingresando…' : 'Ingresar'}
         </button>
+
+        <p className="auth-foot">
+          ¿No tienes cuenta?{' '}
+          <button type="button" className="auth-link auth-link--bold" onClick={onRegister}>
+            Regístrate gratis
+          </button>
+        </p>
       </form>
     </AuthLayout>
   )
