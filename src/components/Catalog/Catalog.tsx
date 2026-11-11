@@ -3,7 +3,14 @@ import Header from '../Header/Header'
 import ProductCard from '../ProductCard/ProductCard'
 import { categories, fetchProducts, type Category, type Product } from '../../data/products'
 import type { User } from '../../data/auth'
+import iconCheckmark from '../../assets/icon-checkmark.svg'
 import './Catalog.css'
+
+const priceRanges = [
+  { id: 'lt100', label: 'Hasta S/ 100', test: (p: number) => p <= 100 },
+  { id: '100-300', label: 'S/ 100 – S/ 300', test: (p: number) => p > 100 && p <= 300 },
+  { id: 'gt300', label: 'Más de S/ 300', test: (p: number) => p > 300 },
+]
 
 interface CatalogProps {
   user: User | null
@@ -15,6 +22,9 @@ function Catalog({
   onAccountClick,
 }: CatalogProps) {
   const [category, setCategory] = useState<Category | null>(null)
+  const [selectedPrices, setSelectedPrices] = useState<string[]>([])
+  const [inStockOnly, setInStockOnly] = useState(true)
+  const [fastShippingOnly, setFastShippingOnly] = useState(false)
   const [products, setProducts] = useState<Product[]>([])
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading')
 
@@ -36,10 +46,17 @@ function Catalog({
   const filtered = useMemo(() => {
     const result = products.filter((p) => {
       if (category && p.category !== category) return false
+      if (selectedPrices.length && !priceRanges.some((r) => selectedPrices.includes(r.id) && r.test(p.price))) return false
+      if (inStockOnly && !p.inStock) return false
+      if (fastShippingOnly && !p.fastShipping) return false
       return true
     })
     return result
-  }, [products, category])
+  }, [products, category, selectedPrices, inStockOnly, fastShippingOnly])
+
+  const togglePrice = (id: string) => {
+    setSelectedPrices((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]))
+  }
 
   const countFor = (c: Category | null) => (c ? products.filter((p) => p.category === c).length : products.length)
 
@@ -81,6 +98,45 @@ function Catalog({
                   <span>{countFor(c)}</span>
                 </button>
               ))}
+            </div>
+
+            <div className="catalog-filters__group">
+              <h2 className="catalog-filters__title">Precio</h2>
+              {priceRanges.map((range) => (
+                <label key={range.id} className="catalog-check">
+                  <input
+                    type="checkbox"
+                    checked={selectedPrices.includes(range.id)}
+                    onChange={() => togglePrice(range.id)}
+                  />
+                  <span className="catalog-check__box" aria-hidden="true">
+                    <img src={iconCheckmark} width="12" height="9" alt="" />
+                  </span>
+                  {range.label}
+                </label>
+              ))}
+            </div>
+
+            <div className="catalog-filters__group">
+              <h2 className="catalog-filters__title">Disponibilidad</h2>
+              <label className="catalog-check">
+                <input type="checkbox" checked={inStockOnly} onChange={(e) => setInStockOnly(e.target.checked)} />
+                <span className="catalog-check__box" aria-hidden="true">
+                  <img src={iconCheckmark} width="12" height="9" alt="" />
+                </span>
+                En stock
+              </label>
+              <label className="catalog-check">
+                <input
+                  type="checkbox"
+                  checked={fastShippingOnly}
+                  onChange={(e) => setFastShippingOnly(e.target.checked)}
+                />
+                <span className="catalog-check__box" aria-hidden="true">
+                  <img src={iconCheckmark} width="12" height="9" alt="" />
+                </span>
+                Envío en 24 h
+              </label>
             </div>
           </aside>
 
