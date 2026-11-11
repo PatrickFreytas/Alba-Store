@@ -3,14 +3,19 @@ import Header from '../Header/Header'
 import ProductCard from '../ProductCard/ProductCard'
 import { categories, fetchProducts, type Category, type Product } from '../../data/products'
 import type { User } from '../../data/auth'
+import iconChevronDown from '../../assets/icon-chevron-down.svg'
 import iconCheckmark from '../../assets/icon-checkmark.svg'
 import './Catalog.css'
+
+type SortOption = 'relevance' | 'price-asc' | 'price-desc' | 'rating'
 
 const priceRanges = [
   { id: 'lt100', label: 'Hasta S/ 100', test: (p: number) => p <= 100 },
   { id: '100-300', label: 'S/ 100 – S/ 300', test: (p: number) => p > 100 && p <= 300 },
   { id: 'gt300', label: 'Más de S/ 300', test: (p: number) => p > 300 },
 ]
+
+const PAGE_SIZE = 8
 
 interface CatalogProps {
   user: User | null
@@ -25,6 +30,8 @@ function Catalog({
   const [selectedPrices, setSelectedPrices] = useState<string[]>([])
   const [inStockOnly, setInStockOnly] = useState(true)
   const [fastShippingOnly, setFastShippingOnly] = useState(false)
+  const [sort, setSort] = useState<SortOption>('relevance')
+  const [page, setPage] = useState(1)
   const [products, setProducts] = useState<Product[]>([])
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading')
 
@@ -43,6 +50,11 @@ function Catalog({
     return () => controller.abort()
   }, [])
 
+  const resetPage = <T,>(setter: (value: T) => void) => (value: T) => {
+    setter(value)
+    setPage(1)
+  }
+
   const filtered = useMemo(() => {
     const result = products.filter((p) => {
       if (category && p.category !== category) return false
@@ -51,11 +63,19 @@ function Catalog({
       if (fastShippingOnly && !p.fastShipping) return false
       return true
     })
+    if (sort === 'price-asc') result.sort((a, b) => a.price - b.price)
+    if (sort === 'price-desc') result.sort((a, b) => b.price - a.price)
+    if (sort === 'rating') result.sort((a, b) => b.rating - a.rating)
     return result
-  }, [products, category, selectedPrices, inStockOnly, fastShippingOnly])
+  }, [products, category, selectedPrices, inStockOnly, fastShippingOnly, sort])
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
+  const currentPage = Math.min(page, totalPages)
+  const pageItems = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE)
 
   const togglePrice = (id: string) => {
     setSelectedPrices((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]))
+    setPage(1)
   }
 
   const countFor = (c: Category | null) => (c ? products.filter((p) => p.category === c).length : products.length)
@@ -66,6 +86,7 @@ function Catalog({
         accountLabel={user ? user.fullName.split(' ')[0] : 'Mi cuenta'}
         onLogoClick={() => {
           setCategory(null)
+          setPage(1)
         }}
         onAccountClick={onAccountClick}
       />
@@ -91,7 +112,7 @@ function Catalog({
                   key={c ?? 'all'}
                   type="button"
                   className={`catalog-category${category === c ? ' is-active' : ''}`}
-                  onClick={() => setCategory(c)}
+                  onClick={() => resetPage(setCategory)(c)}
                   aria-pressed={category === c}
                 >
                   {c ?? 'Todos'}
@@ -120,7 +141,7 @@ function Catalog({
             <div className="catalog-filters__group">
               <h2 className="catalog-filters__title">Disponibilidad</h2>
               <label className="catalog-check">
-                <input type="checkbox" checked={inStockOnly} onChange={(e) => setInStockOnly(e.target.checked)} />
+                <input type="checkbox" checked={inStockOnly} onChange={(e) => resetPage(setInStockOnly)(e.target.checked)} />
                 <span className="catalog-check__box" aria-hidden="true">
                   <img src={iconCheckmark} width="12" height="9" alt="" />
                 </span>
@@ -130,7 +151,7 @@ function Catalog({
                 <input
                   type="checkbox"
                   checked={fastShippingOnly}
-                  onChange={(e) => setFastShippingOnly(e.target.checked)}
+                  onChange={(e) => resetPage(setFastShippingOnly)(e.target.checked)}
                 />
                 <span className="catalog-check__box" aria-hidden="true">
                   <img src={iconCheckmark} width="12" height="9" alt="" />
@@ -148,15 +169,27 @@ function Catalog({
                   {filtered.length} {filtered.length === 1 ? 'producto encontrado' : 'productos encontrados'}
                 </p>
               </div>
+              <label className="catalog-sort">
+                Ordenar por
+                <span className="catalog-sort__select">
+                  <select value={sort} onChange={(e) => setSort(e.target.value as SortOption)}>
+                    <option value="relevance">Más relevantes</option>
+                    <option value="price-asc">Menor precio</option>
+                    <option value="price-desc">Mayor precio</option>
+                    <option value="rating">Mejor valorados</option>
+                  </select>
+                  <img src={iconChevronDown} width="12" height="7" alt="" />
+                </span>
+              </label>
             </div>
 
             {status === 'loading' ? (
               <p className="catalog-empty">Cargando productos…</p>
             ) : status === 'error' ? (
               <p className="catalog-empty">No se pudieron cargar los productos. Verifica que la API esté encendida.</p>
-            ) : filtered.length > 0 ? (
+            ) : pageItems.length > 0 ? (
               <div className="catalog-grid">
-                {filtered.map((product) => (
+                {pageItems.map((product) => (
                   <ProductCard
                     key={product.id}
                     product={product}
@@ -166,6 +199,36 @@ function Catalog({
             ) : (
               <p className="catalog-empty">No encontramos productos con esos filtros.</p>
             )}
+
+            <nav className="catalog-pagination" aria-label="Paginación">
+              <button
+                type="button"
+                onClick={() => setPage(currentPage - 1)}
+                disabled={currentPage === 1}
+                aria-label="Página anterior"
+              >
+                ‹
+              </button>
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((n) => (
+                <button
+                  key={n}
+                  type="button"
+                  className={n === currentPage ? 'is-active' : undefined}
+                  onClick={() => setPage(n)}
+                  aria-current={n === currentPage ? 'page' : undefined}
+                >
+                  {n}
+                </button>
+              ))}
+              <button
+                type="button"
+                onClick={() => setPage(currentPage + 1)}
+                disabled={currentPage === totalPages}
+                aria-label="Página siguiente"
+              >
+                ›
+              </button>
+            </nav>
           </section>
         </div>
       </main>
