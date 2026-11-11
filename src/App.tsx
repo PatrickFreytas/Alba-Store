@@ -24,10 +24,13 @@ function App() {
   const [submitting, setSubmitting] = useState(false)
   const [cart, setCart] = useState<CartItem[]>([])
   const [favorites, setFavorites] = useState<number[]>([])
+  // A dónde volver después de iniciar sesión o registrarse (p. ej. el checkout)
+  const [returnTo, setReturnTo] = useState<View | null>(null)
 
   const goTo = (next: View) => {
     setAuthError(null)
     setNotice(null)
+    if (next === 'catalog') setReturnTo(null)
     if (next !== 'reset' && resetToken) {
       // Quita el token de la URL para que no quede en el historial
       window.history.replaceState(null, '', window.location.pathname)
@@ -36,13 +39,19 @@ function App() {
     setView(next)
   }
 
+  const loginThenReturn = (target: View, screen: 'login' | 'register' = 'login') => {
+    setReturnTo(target)
+    goTo(screen)
+  }
+
   const authenticate = async (request: () => Promise<User>) => {
     setSubmitting(true)
     setAuthError(null)
     try {
       setUser(await request())
       setNotice(null)
-      setView('catalog')
+      setView(returnTo === 'checkout' && cart.length === 0 ? 'catalog' : (returnTo ?? 'catalog'))
+      setReturnTo(null)
     } catch (error) {
       setAuthError((error as Error).message)
     } finally {
@@ -85,6 +94,12 @@ function App() {
         user={user}
         onQuantityChange={(id, quantity) => setCart((prev) => setQuantity(prev, id, quantity))}
         onContinueShopping={() => goTo('catalog')}
+        onOrderPlaced={() => {
+          setCart([])
+          goTo('catalog')
+        }}
+        onLogin={() => loginThenReturn('checkout')}
+        onRegister={() => loginThenReturn('checkout', 'register')}
       />
     )
   }
@@ -100,7 +115,7 @@ function App() {
         onCart={() => goTo('checkout')}
         onNavigate={goTo}
         onLogout={logout}
-        onLogin={() => goTo('login')}
+        onLogin={() => loginThenReturn('favorites')}
       >
         <FavoritesPage
           favoriteIds={favorites}
