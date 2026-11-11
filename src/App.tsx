@@ -82,6 +82,7 @@ function App() {
     return (
       <Checkout
         items={cart}
+        user={user}
         onQuantityChange={(id, quantity) => setCart((prev) => setQuantity(prev, id, quantity))}
         onContinueShopping={() => goTo('catalog')}
       />
